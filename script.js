@@ -3,17 +3,19 @@
 document.addEventListener("DOMContentLoaded", () => {
   // === Theme toggle logic ===
   const themeToggle = document.getElementById("themeToggle");
+  // applyTheme: sets the `dark` class, saves preference, updates button text
   const applyTheme = (theme) => {
     document.body.classList.toggle("dark", theme === "dark");
     localStorage.setItem("pdfMetaTheme", theme);
+    // Update label: when dark, offer "Light Mode", else "Dark Mode"
+    themeToggle.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
   };
-  // Initialize theme from localStorage or system
-  const saved = localStorage.getItem("pdfMetaTheme");
-  if (saved) {
-    applyTheme(saved);
-  } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    applyTheme("dark");
-  }
+  // Determine initial theme (saved or system)
+  const savedTheme = localStorage.getItem("pdfMetaTheme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
+  applyTheme(initialTheme);
+  // Toggle on button click
   themeToggle.addEventListener("click", () => {
     const next = document.body.classList.contains("dark") ? "light" : "dark";
     applyTheme(next);
@@ -38,14 +40,16 @@ document.addEventListener("DOMContentLoaded", () => {
   let pdfDoc = null,
     originalName = "";
 
-  // Load PDF & show metadata
+  // 1️⃣ Load PDF & extract metadata
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     originalName = file.name;
+
     const bytes = await file.arrayBuffer();
     pdfDoc = await PDFLib.PDFDocument.load(bytes);
 
+    // Build metadata object
     const meta = {
       Title: pdfDoc.getTitle() || "",
       Author: pdfDoc.getAuthor() || "",
@@ -61,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
         : "",
     };
 
-    // Populate table
+    // Populate metadata table
     displayBody.innerHTML = "";
     Object.entries(meta).forEach(([k, v]) => {
       const row = document.createElement("tr");
@@ -69,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
       displayBody.appendChild(row);
     });
 
-    // Prefill form
+    // Prefill form inputs
     filenameIn.value = originalName;
     titleIn.value = meta.Title;
     authorIn.value = meta.Author;
@@ -84,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dlLink.hidden = true;
   });
 
-  // Save edits & download
+  // 2️⃣ Save edits & prepare download
   saveBtn.addEventListener("click", async () => {
     if (!pdfDoc) return;
     pdfDoc.setTitle(titleIn.value);
@@ -108,9 +112,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const blob = new Blob([updated], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
 
+    // Determine output filename
     let outName = filenameIn.value.trim() || originalName;
     if (!outName.toLowerCase().endsWith(".pdf")) outName += ".pdf";
 
+    // Configure download link
     dlLink.href = url;
     dlLink.download = outName;
     dlLink.textContent = `Download "${outName}"`;
