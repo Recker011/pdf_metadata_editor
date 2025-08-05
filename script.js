@@ -1,12 +1,11 @@
 // script.js
 
-// Wait for DOM ready
 document.addEventListener("DOMContentLoaded", () => {
-  // === DOM references ===
   const fileInput = document.getElementById("fileInput");
+  const previewDiv = document.getElementById("previewContainer");
+  const pdfPreview = document.getElementById("pdfPreview");
   const metaContainer = document.getElementById("metadataContainer");
   const displayBody = document.querySelector("#metadataDisplay tbody");
-  const form = document.getElementById("metadataForm");
   const filenameInput = document.getElementById("filenameInput");
   const titleIn = document.getElementById("titleInput");
   const authorIn = document.getElementById("authorInput");
@@ -19,23 +18,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveBtn = document.getElementById("saveButton");
   const dlLink = document.getElementById("downloadLink");
 
-  let pdfDoc = null; // Will hold the loaded PDFDocument
-  let originalName = ""; // To remember uploaded filename
+  let pdfDoc = null;
+  let originalName = "";
 
-  // --- 1️⃣ Load PDF & extract metadata ---
+  // When a file is selected...
   fileInput.addEventListener("change", async (evt) => {
     const file = evt.target.files[0];
     if (!file) return;
 
-    // Remember original filename
     originalName = file.name;
 
-    // Read file bytes
+    // 1️⃣ Show preview of the original PDF
+    const fileURL = URL.createObjectURL(file);
+    pdfPreview.src = fileURL;
+    previewDiv.hidden = false;
+
+    // 2️⃣ Load into pdf-lib for metadata extraction
     const arrayBuffer = await file.arrayBuffer();
-    // Load into pdf-lib
     pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
 
-    // Build metadata object with all standard fields
+    // Build metadata object
     const meta = {
       Title: pdfDoc.getTitle() || "",
       Author: pdfDoc.getAuthor() || "",
@@ -43,12 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
       Keywords: (pdfDoc.getKeywords() || []).join(", "),
       Creator: pdfDoc.getCreator() || "",
       Producer: pdfDoc.getProducer() || "",
-      CreationDate: pdfDoc.getCreationDate()
-        ? pdfDoc.getCreationDate().toISOString()
-        : "",
-      ModificationDate: pdfDoc.getModificationDate()
-        ? pdfDoc.getModificationDate().toISOString()
-        : "",
+      CreationDate: pdfDoc.getCreationDate()?.toISOString() || "",
+      ModificationDate: pdfDoc.getModificationDate()?.toISOString() || "",
     };
 
     // Populate metadata table
@@ -59,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
       displayBody.appendChild(row);
     }
 
-    // Populate form inputs
+    // Populate form
     filenameInput.value = originalName;
     titleIn.value = meta.Title;
     authorIn.value = meta.Author;
@@ -70,50 +68,44 @@ document.addEventListener("DOMContentLoaded", () => {
     creationIn.value = meta.CreationDate;
     modDateIn.value = meta.ModificationDate;
 
-    // Show the metadata UI
+    // Reveal metadata form & hide old download link
     metaContainer.hidden = false;
     dlLink.hidden = true;
   });
 
-  // --- 2️⃣ Save edits & prepare download ---
+  // When the user clicks Save & Download...
   saveBtn.addEventListener("click", async () => {
     if (!pdfDoc) return;
 
-    // Update all metadata fields from form
+    // Update metadata
     pdfDoc.setTitle(titleIn.value);
     pdfDoc.setAuthor(authorIn.value);
     pdfDoc.setSubject(subjectIn.value);
-
     const kwArray = keywordsIn.value
       .split(",")
       .map((s) => s.trim())
       .filter((s) => s);
     pdfDoc.setKeywords(kwArray);
-
     pdfDoc.setCreator(creatorIn.value);
     pdfDoc.setProducer(producerIn.value);
 
-    // Parse and set creation/mod dates if valid
     const cd = new Date(creationIn.value);
     if (!isNaN(cd)) pdfDoc.setCreationDate(cd);
-
     const md = new Date(modDateIn.value);
     if (!isNaN(md)) pdfDoc.setModificationDate(md);
 
-    // Serialize PDF to bytes
+    // Serialize & make blob URL
     const updatedBytes = await pdfDoc.save();
-    // Create a Blob & object URL
     const blob = new Blob([updatedBytes], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
+    const newURL = URL.createObjectURL(blob);
 
-    // Determine download filename
+    // Update preview to show edited PDF
+    pdfPreview.src = newURL;
+
+    // Configure download link
     let outName = filenameInput.value.trim() || originalName;
-    if (!outName.toLowerCase().endsWith(".pdf")) {
-      outName += ".pdf";
-    }
-
-    // Configure and show download link
-    dlLink.href = url;
+    if (!outName.toLowerCase().endsWith(".pdf")) outName += ".pdf";
+    dlLink.href = newURL;
     dlLink.download = outName;
     dlLink.textContent = `Download "${outName}"`;
     dlLink.hidden = false;

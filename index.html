@@ -1,76 +1,108 @@
 <!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PDF Metadata Manager</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- pdf-lib for client-side PDF manipulation -->
-  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-</head>
-<body>
-  <div class="container">
-    <h1>PDF Metadata Manager</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF Metadata Manager</title>
+    <link rel="stylesheet" href="style.css" />
+    <!-- pdf-lib for client-side PDF manipulation -->
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>PDF Metadata Manager</h1>
 
-    <!-- 1️⃣ Upload PDF -->
-    <input type="file" id="fileInput" accept="application/pdf">
+      <!-- 1️⃣ Upload PDF -->
+      <input type="file" id="fileInput" accept="application/pdf" />
 
-    <!-- 2️⃣ Metadata display & edit -->
-    <div id="metadataContainer" hidden>
-      <!-- Display current metadata -->
-      <h2>Current Metadata</h2>
-      <table id="metadataDisplay">
-        <thead>
-          <tr><th>Field</th><th>Value</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <!-- ➤ PDF Preview -->
+      <div id="previewContainer" class="preview-container" hidden>
+        <h2>PDF Preview</h2>
+        <!-- embed will display the PDF -->
+        <embed id="pdfPreview" type="application/pdf" />
+      </div>
 
-      <!-- Editable metadata form -->
-      <h2>Edit Metadata</h2>
-      <form id="metadataForm">
-        <!-- Output filename control -->
-        <label>
-          Output Filename:
-          <input type="text" id="filenameInput" placeholder="filename.pdf">
-        </label>
+      <!-- 2️⃣ Metadata display & edit -->
+      <div id="metadataContainer" hidden>
+        <h2>Current Metadata</h2>
+        <table id="metadataDisplay">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
 
-        <!-- Standard PDF Info fields -->
-        <label>Title:
-          <input type="text" id="titleInput" placeholder="Title">
-        </label>
-        <label>Author:
-          <input type="text" id="authorInput" placeholder="Author">
-        </label>
-        <label>Subject:
-          <input type="text" id="subjectInput" placeholder="Subject">
-        </label>
-        <label>Keywords (comma-sep):
-          <input type="text" id="keywordsInput" placeholder="e.g. invoice, report">
-        </label>
-        <label>Creator:
-          <input type="text" id="creatorInput" placeholder="Creator application">
-        </label>
-        <label>Producer:
-          <input type="text" id="producerInput" placeholder="Producer library">
-        </label>
-        <label>Creation Date (ISO):
-          <input type="text" id="creationDateInput" placeholder="YYYY-MM-DDTHH:MM:SSZ">
-        </label>
-        <label>Modification Date (ISO):
-          <input type="text" id="modDateInput" placeholder="YYYY-MM-DDTHH:MM:SSZ">
-        </label>
+        <h2>Edit Metadata</h2>
+        <form id="metadataForm">
+          <label>
+            Output Filename:
+            <input type="text" id="filenameInput" placeholder="filename.pdf" />
+          </label>
+          <label
+            >Title:
+            <input type="text" id="titleInput" placeholder="Title" />
+          </label>
+          <label
+            >Author:
+            <input type="text" id="authorInput" placeholder="Author" />
+          </label>
+          <label
+            >Subject:
+            <input type="text" id="subjectInput" placeholder="Subject" />
+          </label>
+          <label
+            >Keywords (comma-sep):
+            <input
+              type="text"
+              id="keywordsInput"
+              placeholder="e.g. invoice, report"
+            />
+          </label>
+          <label
+            >Creator:
+            <input
+              type="text"
+              id="creatorInput"
+              placeholder="Creator application"
+            />
+          </label>
+          <label
+            >Producer:
+            <input
+              type="text"
+              id="producerInput"
+              placeholder="Producer library"
+            />
+          </label>
+          <label
+            >Creation Date (ISO):
+            <input
+              type="text"
+              id="creationDateInput"
+              placeholder="YYYY-MM-DDTHH:MM:SSZ"
+            />
+          </label>
+          <label
+            >Modification Date (ISO):
+            <input
+              type="text"
+              id="modDateInput"
+              placeholder="YYYY-MM-DDTHH:MM:SSZ"
+            />
+          </label>
 
-        <!-- Save & download -->
-        <button type="button" id="saveButton">Save & Download</button>
-      </form>
+          <button type="button" id="saveButton">Save &amp; Download</button>
+        </form>
+      </div>
+
+      <!-- 3️⃣ Download link -->
+      <a id="downloadLink" hidden>Download Updated PDF</a>
     </div>
 
-    <!-- 3️⃣ Download link -->
-    <a id="downloadLink" hidden>Download Updated PDF</a>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>

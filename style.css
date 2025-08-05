@@ -32,6 +32,26 @@ input[type="file"] {
   margin: 0 auto 1.5rem;
 }
 
+/* PDF Preview styles */
+.preview-container {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.preview-container h2 {
+  background: #007bff;
+  color: #fff;
+  padding: 0.5rem;
+  margin: 0;
+}
+.preview-container embed {
+  width: 100%;
+  height: 400px;
+  display: block;
+  border: none;
+}
+
 /* Metadata table */
 table {
   width: 100%;
