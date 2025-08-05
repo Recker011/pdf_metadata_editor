@@ -1,11 +1,13 @@
 // script.js
 
 document.addEventListener("DOMContentLoaded", () => {
+  const dropZone = document.getElementById("dropZone");
   const fileInput = document.getElementById("fileInput");
   const previewDiv = document.getElementById("previewContainer");
   const pdfPreview = document.getElementById("pdfPreview");
   const metaContainer = document.getElementById("metadataContainer");
   const displayBody = document.querySelector("#metadataDisplay tbody");
+
   const filenameInput = document.getElementById("filenameInput");
   const titleIn = document.getElementById("titleInput");
   const authorIn = document.getElementById("authorInput");
@@ -15,29 +17,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const producerIn = document.getElementById("producerInput");
   const creationIn = document.getElementById("creationDateInput");
   const modDateIn = document.getElementById("modDateInput");
+
+  const creationError = document.getElementById("creationError");
+  const modError = document.getElementById("modError");
+
   const saveBtn = document.getElementById("saveButton");
   const dlLink = document.getElementById("downloadLink");
 
   let pdfDoc = null;
   let originalName = "";
 
-  // When a file is selected...
-  fileInput.addEventListener("change", async (evt) => {
-    const file = evt.target.files[0];
-    if (!file) return;
+  // ISO-8601 validator (basic YYYY-MM-DDTHH:MM:SSZ)
+  function isValidISO(s) {
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(s);
+  }
 
+  // Live validation
+  creationIn.addEventListener("input", () => {
+    if (creationIn.value && !isValidISO(creationIn.value)) {
+      creationIn.classList.add("invalid");
+      creationError.style.display = "block";
+    } else {
+      creationIn.classList.remove("invalid");
+      creationError.style.display = "none";
+    }
+  });
+  modDateIn.addEventListener("input", () => {
+    if (modDateIn.value && !isValidISO(modDateIn.value)) {
+      modDateIn.classList.add("invalid");
+      modError.style.display = "block";
+    } else {
+      modDateIn.classList.remove("invalid");
+      modError.style.display = "none";
+    }
+  });
+
+  // Core file-loading & metadata extraction
+  async function loadFile(file) {
     originalName = file.name;
 
-    // 1️⃣ Show preview of the original PDF
-    const fileURL = URL.createObjectURL(file);
-    pdfPreview.src = fileURL;
+    // Preview original PDF
+    const originalURL = URL.createObjectURL(file);
+    pdfPreview.src = originalURL;
     previewDiv.hidden = false;
 
-    // 2️⃣ Load into pdf-lib for metadata extraction
+    // Load into pdf-lib
     const arrayBuffer = await file.arrayBuffer();
     pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
 
-    // Build metadata object
+    // Extract metadata
     const meta = {
       Title: pdfDoc.getTitle() || "",
       Author: pdfDoc.getAuthor() || "",
@@ -49,11 +77,11 @@ document.addEventListener("DOMContentLoaded", () => {
       ModificationDate: pdfDoc.getModificationDate()?.toISOString() || "",
     };
 
-    // Populate metadata table
+    // Populate table
     displayBody.innerHTML = "";
-    for (const [key, value] of Object.entries(meta)) {
+    for (const [k, v] of Object.entries(meta)) {
       const row = document.createElement("tr");
-      row.innerHTML = `<td>${key}</td><td>${value}</td>`;
+      row.innerHTML = `<td>${k}</td><td>${v}</td>`;
       displayBody.appendChild(row);
     }
 
@@ -68,24 +96,45 @@ document.addEventListener("DOMContentLoaded", () => {
     creationIn.value = meta.CreationDate;
     modDateIn.value = meta.ModificationDate;
 
-    // Reveal metadata form & hide old download link
     metaContainer.hidden = false;
     dlLink.hidden = true;
+  }
+
+  // Wire up file picker
+  fileInput.addEventListener("change", (e) => {
+    if (e.target.files[0]) loadFile(e.target.files[0]);
   });
 
-  // When the user clicks Save & Download...
+  // Drag & Drop events
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    if (e.dataTransfer.files[0]?.type === "application/pdf") {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Save edits & refresh preview
   saveBtn.addEventListener("click", async () => {
     if (!pdfDoc) return;
 
-    // Update metadata
     pdfDoc.setTitle(titleIn.value);
     pdfDoc.setAuthor(authorIn.value);
     pdfDoc.setSubject(subjectIn.value);
-    const kwArray = keywordsIn.value
+
+    const kws = keywordsIn.value
       .split(",")
       .map((s) => s.trim())
-      .filter((s) => s);
-    pdfDoc.setKeywords(kwArray);
+      .filter(Boolean);
+    pdfDoc.setKeywords(kws);
+
     pdfDoc.setCreator(creatorIn.value);
     pdfDoc.setProducer(producerIn.value);
 
@@ -94,17 +143,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const md = new Date(modDateIn.value);
     if (!isNaN(md)) pdfDoc.setModificationDate(md);
 
-    // Serialize & make blob URL
     const updatedBytes = await pdfDoc.save();
     const blob = new Blob([updatedBytes], { type: "application/pdf" });
     const newURL = URL.createObjectURL(blob);
 
-    // Update preview to show edited PDF
+    // Update preview & download link
     pdfPreview.src = newURL;
-
-    // Configure download link
     let outName = filenameInput.value.trim() || originalName;
     if (!outName.toLowerCase().endsWith(".pdf")) outName += ".pdf";
+
     dlLink.href = newURL;
     dlLink.download = outName;
     dlLink.textContent = `Download "${outName}"`;
