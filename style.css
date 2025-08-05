@@ -1,5 +1,5 @@
 /* style.css */
-/* --- Reset & Base --- */
+/* --- Reset & Base Styles --- */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -16,24 +16,30 @@ body {
   padding: 2rem;
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-h1, h2 {
+
+/* Headings */
+h1,
+h2 {
   text-align: center;
   margin-bottom: 1rem;
 }
+
+/* File input */
 input[type="file"] {
   display: block;
   margin: 0 auto 1.5rem;
 }
 
-/* --- Metadata table --- */
+/* Metadata table */
 table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1.5rem;
 }
-th, td {
+th,
+td {
   border: 1px solid #ccc;
   padding: 0.5rem;
   text-align: left;
@@ -42,7 +48,7 @@ th {
   background: #f7f7f7;
 }
 
-/* --- Form --- */
+/* Edit form layout */
 form {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -60,7 +66,10 @@ input[type="text"] {
   border: 1px solid #bbb;
   border-radius: 4px;
 }
-button, a#downloadLink {
+
+/* Buttons & link */
+button,
+a#downloadLink {
   grid-column: span 2;
   padding: 0.75rem;
   text-align: center;

@@ -1,15 +1,13 @@
 // script.js
-// Wait for DOM
+
+// Wait for DOM ready
 document.addEventListener("DOMContentLoaded", () => {
-  // DOM references
+  // === DOM references ===
   const fileInput = document.getElementById("fileInput");
   const metaContainer = document.getElementById("metadataContainer");
   const displayBody = document.querySelector("#metadataDisplay tbody");
   const form = document.getElementById("metadataForm");
-  const dlLink = document.getElementById("downloadLink");
-  const saveBtn = document.getElementById("saveButton");
-
-  // Inputs
+  const filenameInput = document.getElementById("filenameInput");
   const titleIn = document.getElementById("titleInput");
   const authorIn = document.getElementById("authorInput");
   const subjectIn = document.getElementById("subjectInput");
@@ -18,18 +16,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const producerIn = document.getElementById("producerInput");
   const creationIn = document.getElementById("creationDateInput");
   const modDateIn = document.getElementById("modDateInput");
+  const saveBtn = document.getElementById("saveButton");
+  const dlLink = document.getElementById("downloadLink");
 
-  let pdfDoc; // holds loaded PDF
+  let pdfDoc = null; // Will hold the loaded PDFDocument
+  let originalName = ""; // To remember uploaded filename
 
-  // 1️⃣ Load PDF and extract metadata
+  // --- 1️⃣ Load PDF & extract metadata ---
   fileInput.addEventListener("change", async (evt) => {
     const file = evt.target.files[0];
     if (!file) return;
 
-    const bytes = await file.arrayBuffer();
-    pdfDoc = await PDFLib.PDFDocument.load(bytes);
+    // Remember original filename
+    originalName = file.name;
 
-    // Gather all standard fields
+    // Read file bytes
+    const arrayBuffer = await file.arrayBuffer();
+    // Load into pdf-lib
+    pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+
+    // Build metadata object with all standard fields
     const meta = {
       Title: pdfDoc.getTitle() || "",
       Author: pdfDoc.getAuthor() || "",
@@ -45,15 +51,16 @@ document.addEventListener("DOMContentLoaded", () => {
         : "",
     };
 
-    // Display metadata table
+    // Populate metadata table
     displayBody.innerHTML = "";
-    for (const [key, val] of Object.entries(meta)) {
+    for (const [key, value] of Object.entries(meta)) {
       const row = document.createElement("tr");
-      row.innerHTML = `<td>${key}</td><td>${val}</td>`;
+      row.innerHTML = `<td>${key}</td><td>${value}</td>`;
       displayBody.appendChild(row);
     }
 
     // Populate form inputs
+    filenameInput.value = originalName;
     titleIn.value = meta.Title;
     authorIn.value = meta.Author;
     subjectIn.value = meta.Subject;
@@ -63,45 +70,52 @@ document.addEventListener("DOMContentLoaded", () => {
     creationIn.value = meta.CreationDate;
     modDateIn.value = meta.ModificationDate;
 
-    // Reveal UI
+    // Show the metadata UI
     metaContainer.hidden = false;
     dlLink.hidden = true;
   });
 
-  // 2️⃣ Save edits & prepare download
+  // --- 2️⃣ Save edits & prepare download ---
   saveBtn.addEventListener("click", async () => {
     if (!pdfDoc) return;
 
-    // Apply edits
+    // Update all metadata fields from form
     pdfDoc.setTitle(titleIn.value);
     pdfDoc.setAuthor(authorIn.value);
     pdfDoc.setSubject(subjectIn.value);
 
-    const kws = keywordsIn.value
+    const kwArray = keywordsIn.value
       .split(",")
       .map((s) => s.trim())
       .filter((s) => s);
-    pdfDoc.setKeywords(kws);
+    pdfDoc.setKeywords(kwArray);
 
     pdfDoc.setCreator(creatorIn.value);
     pdfDoc.setProducer(producerIn.value);
 
-    // Parse ISO dates if provided
+    // Parse and set creation/mod dates if valid
     const cd = new Date(creationIn.value);
     if (!isNaN(cd)) pdfDoc.setCreationDate(cd);
 
     const md = new Date(modDateIn.value);
     if (!isNaN(md)) pdfDoc.setModificationDate(md);
 
-    // Save and blobify
-    const updated = await pdfDoc.save();
-    const blob = new Blob([updated], { type: "application/pdf" });
+    // Serialize PDF to bytes
+    const updatedBytes = await pdfDoc.save();
+    // Create a Blob & object URL
+    const blob = new Blob([updatedBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
 
-    // Setup download link
+    // Determine download filename
+    let outName = filenameInput.value.trim() || originalName;
+    if (!outName.toLowerCase().endsWith(".pdf")) {
+      outName += ".pdf";
+    }
+
+    // Configure and show download link
     dlLink.href = url;
-    dlLink.download = "pdf-with-updated-metadata.pdf";
-    dlLink.textContent = "Download Updated PDF";
+    dlLink.download = outName;
+    dlLink.textContent = `Download "${outName}"`;
     dlLink.hidden = false;
   });
 });
